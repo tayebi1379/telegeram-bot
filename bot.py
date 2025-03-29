@@ -1,8 +1,8 @@
 import telegram
 import os
 import asyncio
-from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
-from telegram.ext import Application, CommandHandler, MessageHandler, filters
+from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, InlineKeyboardMarkup, InlineKeyboardButton
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler
 
 # توکن ربات از متغیر محیطی
 TOKEN = os.getenv('TOKEN')
@@ -28,10 +28,10 @@ async def check_membership(context, user_id):
 # تابع نمایش منوی اصلی
 async def show_main_menu(update, context):
     keyboard = [
-        ["🤐دیدن عکس زن سپهر حیدری🤐"],
-        ["🤯دیدن عکس سانسوری ساسی😳"],
-        ["😬دیدن عکس رونالدو و زنش😵"],
-        ["😍دیدن عکس علی دایی و زنش🫢"]
+        ["دیدن عکس زن سپهر حیدری"],
+        ["دیدن عکس سانسوری ساسی"],
+        ["دیدن عکس رونالدو و زنش"],
+        ["دیدن عکس علی دایی و زنش"]
     ]
     reply_markup = ReplyKeyboardMarkup(
         keyboard,
@@ -39,24 +39,47 @@ async def show_main_menu(update, context):
     )
     if update.message:
         await update.message.reply_text('منوی اصلی:', reply_markup=reply_markup)
-    else:
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text='منوی اصلی:',
-            reply_markup=reply_markup
-        )
+    elif update.callback_query:
+        await update.callback_query.message.reply_text('منوی اصلی:', reply_markup=reply_markup)
 
-# تابع شروع ربات
+# تابع شروع ربات با اینلاین کیبورد
 async def start(update, context):
     user_id = update.effective_user.id
-    if not await check_membership(context, user_id):
-        join_url = f'https://t.me/{CHANNEL_ID[1:]}'
-        await update.message.reply_text(
-            f"برای دیدن عکس‌ها، لطفاً اول در کانال {CHANNEL_ID} عضو بشید!\nلینک عضویت: {join_url}\nبعد از عضویت، دوباره /start رو بزنید.",
-            reply_markup=ReplyKeyboardRemove()
-        )
-    else:
-        await show_main_menu(update, context)
+    join_url = f'https://t.me/{CHANNEL_ID[1:]}'
+    
+    # تعریف اینلاین کیبورد با دکمه عضویت
+    keyboard = [
+        [InlineKeyboardButton("عضویت در کانال", url=join_url)],
+        [InlineKeyboardButton("عضو شدم", callback_data='check_membership')]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await update.message.reply_text(
+        f"برای دیدن عکس‌ها، لطفاً اول در کانال {CHANNEL_ID} عضو بشید!",
+        reply_markup=reply_markup
+    )
+
+# تابع مدیریت کلیک روی دکمه "عضو شدم"
+async def button(update, context):
+    query = update.callback_query
+    user_id = query.from_user.id
+    
+    if query.data == 'check_membership':
+        if await check_membership(context, user_id):
+            await query.answer("عضویت شما تأیید شد!")
+            await show_main_menu(update, context)
+        else:
+            await query.answer("شما هنوز عضو کانال نشدید!")
+            join_url = f'https://t.me/{CHANNEL_ID[1:]}'
+            keyboard = [
+                [InlineKeyboardButton("عضویت در کانال", url=join_url)],
+                [InlineKeyboardButton("عضو شدم", callback_data='check_membership')]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            await query.message.edit_text(
+                f"شما هنوز در کانال {CHANNEL_ID} عضو نشدید! لطفاً عضو بشید و دوباره امتحان کنید.",
+                reply_markup=reply_markup
+            )
 
 # تابع جداگانه برای حذف پیام‌ها بعد از ۳۰ ثانیه
 async def delete_after_delay(bot, chat_id, photo_message_id, delete_message_id):
@@ -72,29 +95,34 @@ async def handle_message(update, context):
     # بررسی عضویت
     if not await check_membership(context, user_id):
         join_url = f'https://t.me/{CHANNEL_ID[1:]}'
+        keyboard = [
+            [InlineKeyboardButton("عضویت در کانال", url=join_url)],
+            [InlineKeyboardButton("عضو شدم", callback_data='check_membership')]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
         await update.message.reply_text(
-            f"شما هنوز در کانال {CHANNEL_ID} عضو نشدید!\nلینک عضویت: {join_url}\nبعد از عضویت، دوباره /start رو بزنید.",
-            reply_markup=ReplyKeyboardRemove()
+            f"شما هنوز در کانال {CHANNEL_ID} عضو نشدید! لطفاً عضو بشید.",
+            reply_markup=reply_markup
         )
         return
 
     # ارسال عکس و پیام حذف
-    if message_text == "🤐دیدن عکس زن سپهر حیدری🤐":
+    if message_text == "دیدن عکس زن سپهر حیدری":
         photo_message = await context.bot.send_photo(chat_id=user_id, photo=PHOTO_SEPEHR_WIFE)
         delete_message = await context.bot.send_message(chat_id=user_id, text="این عکس پس از ۳۰ ثانیه حذف می‌شود")
         asyncio.create_task(delete_after_delay(context.bot, user_id, photo_message.message_id, delete_message.message_id))
         
-    elif message_text == "🤯دیدن عکس سانسوری ساسی😳":
+    elif message_text == "دیدن عکس سانسوری ساسی":
         photo_message = await context.bot.send_photo(chat_id=user_id, photo=PHOTO_SASY_CENSORED)
         delete_message = await context.bot.send_message(chat_id=user_id, text="این عکس پس از ۳۰ ثانیه حذف می‌شود")
         asyncio.create_task(delete_after_delay(context.bot, user_id, photo_message.message_id, delete_message.message_id))
         
-    elif message_text == "😬دیدن عکس رونالدو و زنش😵":
+    elif message_text == "دیدن عکس رونالدو و زنش":
         photo_message = await context.bot.send_photo(chat_id=user_id, photo=PHOTO_RONALDO_WIFE)
         delete_message = await context.bot.send_message(chat_id=user_id, text="این عکس پس از ۳۰ ثانیه حذف می‌شود")
         asyncio.create_task(delete_after_delay(context.bot, user_id, photo_message.message_id, delete_message.message_id))
         
-    elif message_text == "😍دیدن عکس علی دایی و زنش🫢":
+    elif message_text == "دیدن عکس علی دایی و زنش":
         photo_message = await context.bot.send_photo(chat_id=user_id, photo=PHOTO_ALIDAEI_WIFE)
         delete_message = await context.bot.send_message(chat_id=user_id, text="این عکس پس از ۳۰ ثانیه حذف می‌شود")
         asyncio.create_task(delete_after_delay(context.bot, user_id, photo_message.message_id, delete_message.message_id))
@@ -112,6 +140,7 @@ def main():
     # هندلرها
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    application.add_handler(CallbackQueryHandler(button))  # هندلر برای دکمه‌ها
 
     application.run_polling()
 
