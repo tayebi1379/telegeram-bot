@@ -3,7 +3,8 @@ from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
 
 # توکن ربات که از BotFather گرفتی
-TOKEN = '7836694983:AAElMzWglEhND80VHoFRRlzgwJA2vEl7FlE'
+import os
+TOKEN = os.getenv('TOKEN')
 # آیدی کانال (با @)
 CHANNEL_ID = '@tehrankhabari_ir'
 
