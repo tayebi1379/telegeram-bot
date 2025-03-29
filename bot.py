@@ -15,7 +15,6 @@ PHOTO_SASY_CENSORED = 'https://cdn.rokna.net/thumbnail/mHTJunUTOoEL/yYGYIWiRH1jE
 PHOTO_RONALDO_WIFE = 'https://cdn.rokna.net/servev2/f6VBCVS65xWu/Db2f077dXpA,/%D8%B1%D9%88%D9%86%D8%A7%D9%84%D8%AF%D9%88+%D9%88+%D9%87%D9%85%D8%B3%D8%B1%D8%B4.jpg'
 PHOTO_ALIDAEI_WIFE = 'https://cdn.pishnahadevizheh.com/servev2/KGj3qrulKNsb/MnvWRFh5dGY,/%D8%B9%D9%84%DB%8C+%D8%AF%D8%A7%DB%8C%DB%8C.jpg'
 
-
 # تابع بررسی عضویت کاربر در کانال
 async def check_membership(context, user_id):
     try:
@@ -32,7 +31,7 @@ async def show_main_menu(update, context):
         ["دیدن عکس زن سپهر حیدری"],
         ["دیدن عکس سانسوری ساسی"],
         ["دیدن عکس رونالدو و زنش"],
-        ["دیدن عکس علی دایی و و زنش"]
+        ["دیدن عکس علی دایی و زنش"]
     ]
     reply_markup = ReplyKeyboardMarkup(
         keyboard,
@@ -83,7 +82,6 @@ async def handle_message(update, context):
     if message_text == "دیدن عکس زن سپهر حیدری":
         photo_message = await context.bot.send_photo(chat_id=user_id, photo=PHOTO_SEPEHR_WIFE)
         delete_message = await context.bot.send_message(chat_id=user_id, text="این عکس پس از ۳۰ ثانیه حذف می‌شود")
-        # اجرای حذف در پس‌زمینه
         asyncio.create_task(delete_after_delay(context.bot, user_id, photo_message.message_id, delete_message.message_id))
         
     elif message_text == "دیدن عکس سانسوری ساسی":
