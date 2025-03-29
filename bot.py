@@ -1,14 +1,15 @@
 import telegram
+import os
+import asyncio  # برای تاخیر ۳۰ ثانیه‌ای
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
 
-# توکن ربات که از BotFather گرفتی
-import os
+# توکن ربات از متغیر محیطی
 TOKEN = os.getenv('TOKEN')
 # آیدی کانال (با @)
 CHANNEL_ID = '@tehrankhabari_ir'
 
-# لینک عکس‌ها (اینجا باید لینک واقعی بذاری)
+# لینک عکس‌ها
 PHOTO_SEPEHR_WIFE = 'https://cdn.rokna.net/thumbnail/wOmsWjeamneO/yYGYIWiRH1jE7SFsFf8OS8GtVdPr30fs0wJj5HjN1IuvcJmljcN6H8bAsgVZzpzYCc2Paf9tWNyagVuk0QlPbNxB-KuYdy9P6xL39i3G-Q82HeI91mK-78F62Z5KWk3gNl6RwvjtxurVX_hzZe6NzQ,,/%D8%B3%D9%BE%D9%87%D8%B1+%D8%AD%DB%8C%D8%AF%D8%B1%DB%8C.jpg'
 PHOTO_SASY_CENSORED = 'https://cdn.rokna.net/thumbnail/mHTJunUTOoEL/yYGYIWiRH1jE7SFsFf8OS8GtVdPr30fs0wJj5HjN1IuvcJmljcN6H8bAsgVZzpzYCc2Paf9tWNyagVuk0QlPbNxB-KuYdy9P6xL39i3G-Q82HeI91mK-78F62Z5KWk3gWiOBV6O9LT4lqjAfWapFmw,,/%D8%B3%D8%A7%D8%B3%DB%8C+%D9%85%D8%A7%D9%86%DA%A9%D9%86.jpg'
 PHOTO_RONALDO_WIFE = 'https://cdn.rokna.net/servev2/f6VBCVS65xWu/Db2f077dXpA,/%D8%B1%D9%88%D9%86%D8%A7%D9%84%D8%AF%D9%88+%D9%88+%D9%87%D9%85%D8%B3%D8%B1%D8%B4.jpg'
@@ -25,7 +26,6 @@ async def check_membership(context, user_id):
 
 # تابع نمایش منوی اصلی
 async def show_main_menu(update, context):
-    # تعریف دکمه‌ها به صورت Reply Keyboard
     keyboard = [
         ["دیدن عکس زن سپهر حیدری"],
         ["دیدن عکس سانسوری ساسی"],
@@ -33,7 +33,7 @@ async def show_main_menu(update, context):
     ]
     reply_markup = ReplyKeyboardMarkup(
         keyboard,
-        resize_keyboard=True  # دکمه‌ها اندازه‌ی مناسب داشته باشن
+        resize_keyboard=True
     )
     if update.message:
         await update.message.reply_text('منوی اصلی:', reply_markup=reply_markup)
@@ -51,12 +51,12 @@ async def start(update, context):
         join_url = f'https://t.me/{CHANNEL_ID[1:]}'
         await update.message.reply_text(
             f"برای دیدن عکس‌ها، لطفاً اول در کانال {CHANNEL_ID} عضو بشید!\nلینک عضویت: {join_url}\nبعد از عضویت، دوباره /start رو بزنید.",
-            reply_markup=ReplyKeyboardRemove()  # حذف منو تا وقتی کاربر عضو نشده
+            reply_markup=ReplyKeyboardRemove()
         )
     else:
         await show_main_menu(update, context)
 
-# تابع مدیریت انتخاب گزینه‌ها
+# تابع مدیریت انتخاب گزینه‌ها با حذف عکس
 async def handle_message(update, context):
     user_id = update.effective_user.id
     message_text = update.message.text
@@ -70,13 +70,30 @@ async def handle_message(update, context):
         )
         return
 
-    # ارسال عکس بر اساس انتخاب کاربر
+    # ارسال عکس و پیام حذف
     if message_text == "دیدن عکس زن سپهر حیدری":
-        await context.bot.send_photo(chat_id=user_id, photo=PHOTO_SEPEHR_WIFE)
+        # ارسال عکس
+        photo_message = await context.bot.send_photo(chat_id=user_id, photo=PHOTO_SEPEHR_WIFE)
+        # ارسال پیام اطلاع‌رسانی
+        delete_message = await context.bot.send_message(chat_id=user_id, text="این عکس پس از ۳۰ ثانیه حذف می‌شود")
+        # تاخیر ۳۰ ثانیه‌ای و حذف
+        await asyncio.sleep(30)
+        await context.bot.delete_message(chat_id=user_id, message_id=photo_message.message_id)
+        await context.bot.delete_message(chat_id=user_id, message_id=delete_message.message_id)
+        
     elif message_text == "دیدن عکس سانسوری ساسی":
-        await context.bot.send_photo(chat_id=user_id, photo=PHOTO_SASY_CENSORED)
+        photo_message = await context.bot.send_photo(chat_id=user_id, photo=PHOTO_SASY_CENSORED)
+        delete_message = await context.bot.send_message(chat_id=user_id, text="این عکس پس از ۳۰ ثانیه حذف می‌شود")await asyncio.sleep(30)
+        await context.bot.delete_message(chat_id=user_id, message_id=photo_message.message_id)
+        await context.bot.delete_message(chat_id=user_id, message_id=delete_message.message_id)
+        
     elif message_text == "دیدن عکس رونالدو و زنش":
-        await context.bot.send_photo(chat_id=user_id, photo=PHOTO_RONALDO_WIFE)
+        photo_message = await context.bot.send_photo(chat_id=user_id, photo=PHOTO_RONALDO_WIFE)
+        delete_message = await context.bot.send_message(chat_id=user_id, text="این عکس پس از ۳۰ ثانیه حذف می‌شود")
+        await asyncio.sleep(30)
+        await context.bot.delete_message(chat_id=user_id, message_id=photo_message.message_id)
+        await context.bot.delete_message(chat_id=user_id, message_id=delete_message.message_id)
+        
     else:
         await update.message.reply_text("لطفاً یکی از گزینه‌های منو رو انتخاب کنید!")
 
