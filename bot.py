@@ -28,10 +28,10 @@ async def check_membership(context, user_id):
 # تابع نمایش منوی اصلی
 async def show_main_menu(update, context):
     keyboard = [
-        ["دیدن عکس زن سپهر حیدری"],
-        ["دیدن عکس سانسوری ساسی"],
-        ["دیدن عکس رونالدو و زنش"],
-        ["دیدن عکس علی دایی و زنش"]
+        ["🤐دیدن عکس زن سپهر حیدری🤐"],
+        ["🤯دیدن عکس سانسوری ساسی😳"],
+        ["😬دیدن عکس رونالدو و زنش😵"],
+        ["😍دیدن عکس علی دایی و زنش🫢"]
     ]
     reply_markup = ReplyKeyboardMarkup(
         keyboard,
@@ -108,22 +108,22 @@ async def handle_message(update, context):
         return
 
     # ارسال عکس و پیام حذف
-    if message_text == "دیدن عکس زن سپهر حیدری":
+    if message_text == "🤐دیدن عکس زن سپهر حیدری🤐":
         photo_message = await context.bot.send_photo(chat_id=user_id, photo=PHOTO_SEPEHR_WIFE)
         delete_message = await context.bot.send_message(chat_id=user_id, text="این عکس پس از ۳۰ ثانیه حذف می‌شود")
         asyncio.create_task(delete_after_delay(context.bot, user_id, photo_message.message_id, delete_message.message_id))
         
-    elif message_text == "دیدن عکس سانسوری ساسی":
+    elif message_text == "🤯دیدن عکس سانسوری ساسی😳":
         photo_message = await context.bot.send_photo(chat_id=user_id, photo=PHOTO_SASY_CENSORED)
         delete_message = await context.bot.send_message(chat_id=user_id, text="این عکس پس از ۳۰ ثانیه حذف می‌شود")
         asyncio.create_task(delete_after_delay(context.bot, user_id, photo_message.message_id, delete_message.message_id))
         
-    elif message_text == "دیدن عکس رونالدو و زنش":
+    elif message_text == "😬دیدن عکس رونالدو و زنش😵":
         photo_message = await context.bot.send_photo(chat_id=user_id, photo=PHOTO_RONALDO_WIFE)
         delete_message = await context.bot.send_message(chat_id=user_id, text="این عکس پس از ۳۰ ثانیه حذف می‌شود")
         asyncio.create_task(delete_after_delay(context.bot, user_id, photo_message.message_id, delete_message.message_id))
         
-    elif message_text == "دیدن عکس علی دایی و زنش":
+    elif message_text == "😍دیدن عکس علی دایی و زنش🫢":
         photo_message = await context.bot.send_photo(chat_id=user_id, photo=PHOTO_ALIDAEI_WIFE)
         delete_message = await context.bot.send_message(chat_id=user_id, text="این عکس پس از ۳۰ ثانیه حذف می‌شود")
         asyncio.create_task(delete_after_delay(context.bot, user_id, photo_message.message_id, delete_message.message_id))
