@@ -11,7 +11,7 @@ CHANNEL_ID = '@tehrankhabari_ir'
 # لینک عکس‌ها (اینجا باید لینک واقعی بذاری)
 PHOTO_SEPEHR_WIFE = 'https://roozno.com/files/fa/news/1402/10/13/339199_245.png'
 PHOTO_SASY_CENSORED = 'https://roozno.com/files/fa/news/1402/10/13/339199_245.png'
-PHOTO_RONALDO_WIFE = 'https://roozno.com/files/fa/news/1402/10/13/339199_245.png'
+PHOTO_RONALDO_WIFE = 'https://yasinrahmani.com/wp-content/uploads/2024/03/%D8%A7%D8%B1%D8%A7%D9%85%D8%B4-%D8%AF%D8%B1%D9%88%D9%86%DB%8C-%D8%AF%D8%A7%D8%B1%D9%85.jpg'
 
 # تابع بررسی عضویت کاربر در کانال
 async def check_membership(context, user_id):
