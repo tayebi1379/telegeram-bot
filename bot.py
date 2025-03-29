@@ -1,6 +1,6 @@
 import telegram
 import os
-import asyncio  # برای تاخیر ۳۰ ثانیه‌ای
+import asyncio
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
 
@@ -56,7 +56,13 @@ async def start(update, context):
     else:
         await show_main_menu(update, context)
 
-# تابع مدیریت انتخاب گزینه‌ها با حذف عکس
+# تابع جداگانه برای حذف پیام‌ها بعد از ۳۰ ثانیه
+async def delete_after_delay(bot, chat_id, photo_message_id, delete_message_id):
+    await asyncio.sleep(30)
+    await bot.delete_message(chat_id=chat_id, message_id=photo_message_id)
+    await bot.delete_message(chat_id=chat_id, message_id=delete_message_id)
+
+# تابع مدیریت انتخاب گزینه‌ها
 async def handle_message(update, context):
     user_id = update.effective_user.id
     message_text = update.message.text
@@ -72,33 +78,25 @@ async def handle_message(update, context):
 
     # ارسال عکس و پیام حذف
     if message_text == "دیدن عکس زن سپهر حیدری":
-        # ارسال عکس
         photo_message = await context.bot.send_photo(chat_id=user_id, photo=PHOTO_SEPEHR_WIFE)
-        # ارسال پیام اطلاع‌رسانی
         delete_message = await context.bot.send_message(chat_id=user_id, text="این عکس پس از ۳۰ ثانیه حذف می‌شود")
-        # تاخیر ۳۰ ثانیه‌ای و حذف
-        await asyncio.sleep(30)
-        await context.bot.delete_message(chat_id=user_id, message_id=photo_message.message_id)
-        await context.bot.delete_message(chat_id=user_id, message_id=delete_message.message_id)
+        # اجرای حذف در پس‌زمینه
+        asyncio.create_task(delete_after_delay(context.bot, user_id, photo_message.message_id, delete_message.message_id))
         
     elif message_text == "دیدن عکس سانسوری ساسی":
         photo_message = await context.bot.send_photo(chat_id=user_id, photo=PHOTO_SASY_CENSORED)
         delete_message = await context.bot.send_message(chat_id=user_id, text="این عکس پس از ۳۰ ثانیه حذف می‌شود")
-        await asyncio.sleep(30)
-        await context.bot.delete_message(chat_id=user_id, message_id=photo_message.message_id)
-        await context.bot.delete_message(chat_id=user_id, message_id=delete_message.message_id)
+        asyncio.create_task(delete_after_delay(context.bot, user_id, photo_message.message_id, delete_message.message_id))
         
     elif message_text == "دیدن عکس رونالدو و زنش":
         photo_message = await context.bot.send_photo(chat_id=user_id, photo=PHOTO_RONALDO_WIFE)
         delete_message = await context.bot.send_message(chat_id=user_id, text="این عکس پس از ۳۰ ثانیه حذف می‌شود")
-        await asyncio.sleep(30)
-        await context.bot.delete_message(chat_id=user_id, message_id=photo_message.message_id)
-        await context.bot.delete_message(chat_id=user_id, message_id=delete_message.message_id)
+        asyncio.create_task(delete_after_delay(context.bot, user_id, photo_message.message_id, delete_message.message_id))
         
     else:
         await update.message.reply_text("لطفاً یکی از گزینه‌های منو رو انتخاب کنید!")
 
-    # نمایش دوباره منو بعد از هر عملیات
+    # نمایش دوباره منو بلافاصله
     await show_main_menu(update, context)
 
 # تابع اصلی
