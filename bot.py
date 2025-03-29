@@ -9,7 +9,7 @@ TOKEN = os.getenv('TOKEN')
 CHANNEL_ID = '@tehrankhabari_ir'
 
 # لینک عکس‌ها (اینجا باید لینک واقعی بذاری)
-PHOTO_SEPEHR_WIFE = 'https://ts18.tarafdari.com/contents/user321369/content-article/aram-joyandeh.jpeg'
+PHOTO_SEPEHR_WIFE = 'https://cdn.rokna.net/thumbnail/wOmsWjeamneO/yYGYIWiRH1jE7SFsFf8OS8GtVdPr30fs0wJj5HjN1IuvcJmljcN6H8bAsgVZzpzYCc2Paf9tWNyagVuk0QlPbNxB-KuYdy9P6xL39i3G-Q82HeI91mK-78F62Z5KWk3gNl6RwvjtxurVX_hzZe6NzQ,,/%D8%B3%D9%BE%D9%87%D8%B1+%D8%AD%DB%8C%D8%AF%D8%B1%DB%8C.jpg'
 PHOTO_SASY_CENSORED = 'https://ts18.tarafdari.com/contents/user321369/content-article/aram-joyandeh.jpeg'
 PHOTO_RONALDO_WIFE = 'https://ts18.tarafdari.com/contents/user321369/content-article/aram-joyandeh.jpeg'
 
