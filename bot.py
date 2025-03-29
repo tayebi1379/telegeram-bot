@@ -54,8 +54,9 @@ async def start(update, context):
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
+    # فقط پیام اینلاین کیبورد رو بفرست
     await update.message.reply_text(
-        f"برای دیدن عکس‌ها، لطفاً اول در کانال {CHANNEL_ID} عضو بشید!",
+        f"برای دیدن عکس‌ها، لطفاً در کانال {CHANNEL_ID} عضو بشید!",
         reply_markup=reply_markup
     )
 
@@ -87,7 +88,7 @@ async def delete_after_delay(bot, chat_id, photo_message_id, delete_message_id):
     await bot.delete_message(chat_id=chat_id, message_id=photo_message_id)
     await bot.delete_message(chat_id=chat_id, message_id=delete_message_id)
 
-# تابع مدیریت انتخاب گزینه‌ها
+    # تابع مدیریت انتخاب گزینه‌ها
 async def handle_message(update, context):
     user_id = update.effective_user.id
     message_text = update.message.text
