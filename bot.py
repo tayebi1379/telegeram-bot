@@ -83,7 +83,8 @@ async def handle_message(update, context):
         
     elif message_text == "دیدن عکس سانسوری ساسی":
         photo_message = await context.bot.send_photo(chat_id=user_id, photo=PHOTO_SASY_CENSORED)
-        delete_message = await context.bot.send_message(chat_id=user_id, text="این عکس پس از ۳۰ ثانیه حذف می‌شود")await asyncio.sleep(30)
+        delete_message = await context.bot.send_message(chat_id=user_id, text="این عکس پس از ۳۰ ثانیه حذف می‌شود")
+        await asyncio.sleep(30)
         await context.bot.delete_message(chat_id=user_id, message_id=photo_message.message_id)
         await context.bot.delete_message(chat_id=user_id, message_id=delete_message.message_id)
         
