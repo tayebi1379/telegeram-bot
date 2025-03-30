@@ -60,7 +60,7 @@ async def start(update, context):
     join_url = f'https://t.me/{CHANNEL_ID[1:]}'
     keyboard = [
         [InlineKeyboardButton("عضویت در کانال", url=join_url)],
-        [InlineKeyboardButton("عضو شدم", callback_data='check_membership')]
+        [InlineKeyboardButton("✅تـایــیــد✅", callback_data='check_membership')]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(
@@ -81,7 +81,7 @@ async def button(update, context):
             join_url = f'https://t.me/{CHANNEL_ID[1:]}'
             keyboard = [
                 [InlineKeyboardButton("عضویت در کانال", url=join_url)],
-                [InlineKeyboardButton("عضو شدم", callback_data='check_membership')]
+                [InlineKeyboardButton("✅تـایــیــد✅", callback_data='check_membership')]
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
             await query.message.edit_text(
