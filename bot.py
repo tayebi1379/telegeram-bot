@@ -12,7 +12,7 @@ TOKEN = os.getenv('TOKEN')
 # آیدی کانال (با @)
 CHANNEL_ID = '@tehrankhabari_ir'
 # آیدی ادمین (باید آیدی عددی خودت رو بذاری)
-ADMIN_ID = 1607082886  # آیدی عددی اکانت تلگرامت رو اینجا بذار
+ADMIN_ID = 123456789  # آیدی عددی اکانت تلگرامت رو اینجا بذار
 
 # فایل JSON برای ذخیره عکس‌ها
 PHOTO_FILE = 'photos.json'
@@ -88,6 +88,19 @@ async def button(update, context):
                 f"شما هنوز در کانال {CHANNEL_ID} عضو نشدید! لطفاً عضو بشید و دوباره امتحان کنید.",
                 reply_markup=reply_markup
             )
+    elif query.data.startswith('delete_'):  # مدیریت حذف عکس
+        if user_id != ADMIN_ID:
+            await query.answer("شما ادمین نیستید!")
+            return
+        photo_key = query.data[len('delete_'):]
+        photos = load_photos()
+        if photo_key in photos:
+            del photos[photo_key]
+            save_photos(photos)
+            await query.answer(f"عکس '{photo_key}' حذف شد!")
+            await query.message.edit_text("عکس با موفقیت حذف شد!")
+        else:
+            await query.answer("این عکس پیدا نشد!")
 
 # تابع حذف پیام‌ها بعد از ۳۰ ثانیه
 async def delete_after_delay(bot, chat_id, photo_message_id, delete_message_id):
@@ -112,6 +125,22 @@ async def add_photo(update, context):
     photos[description] = photo_url
     save_photos(photos)
     await update.message.reply_text(f"عکس با توضیح '{description}' اضافه شد!")
+
+# تابع حذف عکس (فقط برای ادمین)
+async def remove_photo(update, context):
+    user_id = update.effective_user.id
+    if user_id != ADMIN_ID:
+        await update.message.reply_text("شما ادمین نیستید و نمی‌تونید عکس حذف کنید!")
+        return
+
+    photos = load_photos()
+    if not photos:
+        await update.message.reply_text("هیچ عکسی برای حذف وجود نداره!")
+        return
+
+    keyboard = [[InlineKeyboardButton(key, callback_data=f'delete_{key}')] for key in photos.keys()]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text("عکسی که می‌خواهید حذف کنید رو انتخاب کنید:", reply_markup=reply_markup)
 
 # تابع مدیریت انتخاب گزینه‌ها
 async def handle_message(update, context):
@@ -159,7 +188,8 @@ def main():
 
     # هندلرها
     application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("addphoto", add_photo))  # دستور جدید برای ادمین
+    application.add_handler(CommandHandler("addphoto", add_photo))  # دستور اضافه کردن عکس
+    application.add_handler(CommandHandler("removephoto", remove_photo))  # دستور حذف عکس
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     application.add_handler(CallbackQueryHandler(button))
 
