@@ -3,7 +3,6 @@ import os
 import asyncio
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler
-import threading
 
 # توکن ربات از متغیر محیطی
 TOKEN = os.getenv('TOKEN')
@@ -85,10 +84,10 @@ async def delete_after_delay(bot, chat_id, photo_message_id, delete_message_id):
     await bot.delete_message(chat_id=chat_id, message_id=photo_message_id)
     await bot.delete_message(chat_id=chat_id, message_id=delete_message_id)
 
-# تابع ارسال پیام دوره‌ای هر ۱۴ دقیقه به کاربران
+# تابع ارسال پیام دوره‌ای هر ۱ دقیقه به کاربران
 async def send_periodic_message(application):
     while True:
-        for user_id in list(active_users):  # کپی لیست برای جلوگیری از خطا در حین تغییرات
+        for user_id in list(active_users):  # کپی لیست برای جلوگیری از خطا
             try:
                 await application.bot.send_message(
                     chat_id=user_id,
@@ -97,7 +96,7 @@ async def send_periodic_message(application):
             except telegram.error.TelegramError as e:
                 print(f"خطا در ارسال پیام به {user_id}: {e}")
                 active_users.discard(user_id)  # حذف کاربر در صورت خطا (مثلاً بلاک کردن ربات)
-        await asyncio.sleep(14 * 60)  # 14 دقیقه صبر کن
+        await asyncio.sleep(60)  # ۱ دقیقه صبر کن
 
 # تابع مدیریت انتخاب گزینه‌ها
 async def handle_message(update, context):
@@ -137,17 +136,6 @@ async def handle_message(update, context):
         await update.message.reply_text("لطفاً یکی از گزینه‌های منو رو انتخاب کنید!")
     await show_main_menu(update, context)
 
-# برای فعال نگه داشتن Render
-from flask import Flask
-app = Flask(__name__)
-
-@app.route('/')
-def keep_alive():
-    return "ربات فعال است!"
-
-def run_flask():
-    app.run(host='0.0.0.0', port=8080)
-
 # تابع اصلی
 def main():
     application = Application.builder().token(TOKEN).build()
@@ -157,12 +145,9 @@ def main():
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     application.add_handler(CallbackQueryHandler(button))
 
-    # شروع ارسال پیام دوره‌ای در یک ترد جدا
+    # شروع ارسال پیام دوره‌ای
     loop = asyncio.get_event_loop()
     loop.create_task(send_periodic_message(application))
-
-    # شروع Flask در یک ترد جدا برای Render
-    threading.Thread(target=run_flask, daemon=True).start()
 
     # شروع ربات
     application.run_polling()
