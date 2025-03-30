@@ -17,7 +17,7 @@ PHOTO_SASY_CENSORED = 'https://cdn.rokna.net/thumbnail/mHTJunUTOoEL/yYGYIWiRH1jE
 PHOTO_RONALDO_WIFE = 'https://cdn.rokna.net/servev2/f6VBCVS65xWu/Db2f077dXpA,/%D8%B1%D9%88%D9%86%D8%A7%D9%84%D8%AF%D9%88+%D9%88+%D9%87%D9%85%D8%B3%D8%B1%D8%B4.jpg'
 PHOTO_ALIDAEI_WIFE = 'https://cdn.pishnahadevizheh.com/servev2/KGj3qrulKNsb/MnvWRFh5dGY,/%D8%B9%D9%84%DB%8C+%D8%AF%D8%A7%DB%8C%DB%8C.jpg'
 
-# مجموعه‌ای برای ذخیره آیدی کاربران
+# مجموعه‌ای برای ذخیره آیدی کاربران (دیگه نیازی بهش نیست، اما فعلاً نگه می‌داریم)
 active_users = set()
 
 # تابع بررسی عضویت کاربر در کانال
@@ -47,7 +47,7 @@ async def show_main_menu(update, context):
 # تابع شروع ربات با اینلاین کیبورد
 async def start(update, context):
     user_id = update.effective_user.id
-    active_users.add(user_id)  # اضافه کردن کاربر به لیست
+    active_users.add(user_id)  # هنوز نگه داشتم، ولی می‌تونی حذفش کنی اگه نخوای
     join_url = f'https://t.me/{CHANNEL_ID[1:]}'
     keyboard = [
         [InlineKeyboardButton("عضویت در کانال", url=join_url)],
@@ -86,24 +86,10 @@ async def delete_after_delay(bot, chat_id, photo_message_id, delete_message_id):
     await bot.delete_message(chat_id=chat_id, message_id=photo_message_id)
     await bot.delete_message(chat_id=chat_id, message_id=delete_message_id)
 
-# تابع ارسال پیام دوره‌ای هر ۱ دقیقه به کاربران
-async def send_periodic_message(application):
-    while True:
-        for user_id in list(active_users):
-            try:
-                await application.bot.send_message(
-                    chat_id=user_id,
-                    text="عکس جنجالی این بازیگر رو دیدی؟"
-                )
-            except telegram.error.TelegramError as e:
-                print(f"خطا در ارسال پیام به {user_id}: {e}")
-                active_users.discard(user_id)
-        await asyncio.sleep(60)  # ۱ دقیقه صبر کن
-
 # تابع مدیریت انتخاب گزینه‌ها
 async def handle_message(update, context):
     user_id = update.effective_user.id
-    active_users.add(user_id)
+    active_users.add(user_id)  # هنوز نگه داشتم، ولی می‌تونی حذفش کنی اگه نخوای
     message_text = update.message.text
     if not await check_membership(context, user_id):
         join_url = f'https://t.me/{CHANNEL_ID[1:]}'
@@ -161,10 +147,6 @@ def main():
 
     # شروع سرور HTTP برای Render
     threading.Thread(target=run_server, daemon=True).start()
-
-    # شروع ارسال پیام دوره‌ای
-    loop = asyncio.get_event_loop()
-    loop.create_task(send_periodic_message(application))
 
     # شروع ربات
     application.run_polling()
