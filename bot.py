@@ -85,6 +85,8 @@ async def start(update, context):
 async def button(update, context):
     query = update.callback_query
     user_id = query.from_user.id
+    print(f"Button clicked: {query.data}")  # دیباگ برای چک کردن ورودی
+
     if query.data == 'check_membership':
         if await check_membership(context, user_id):
             await query.answer("عضویت شما تأیید شد!")
@@ -101,19 +103,6 @@ async def button(update, context):
                 f"شما هنوز در همه کانال‌ها عضو نشدید! لطفاً عضو بشید و دوباره امتحان کنید:\n" + "\n".join(channels),
                 reply_markup=reply_markup
             )
-    elif query.data.startswith('delete_'):
-        if user_id != ADMIN_ID:
-            await query.answer("شما ادمین نیستید!")
-            return
-        photo_key = query.data[len('delete_'):]
-        photos = load_photos()
-        if photo_key in photos:
-            del photos[photo_key]
-            save_photos(photos)
-            await query.answer(f"عکس '{photo_key}' حذف شد!")
-            await query.message.edit_text("عکس با موفقیت حذف شد!")
-        else:
-            await query.answer("این عکس پیدا نشد!")
     elif query.data.startswith('delete_channel_'):
         if user_id != ADMIN_ID:
             await query.answer("شما ادمین نیستید!")
@@ -129,6 +118,20 @@ async def button(update, context):
         else:
             await query.answer("این کانال پیدا نشد!")
             await query.message.edit_text(f"کانال '{channel_id}' پیدا نشد!")
+    elif query.data.startswith('delete_'):
+        if user_id != ADMIN_ID:
+            await query.answer("شما ادمین نیستید!")
+            return
+        photo_key = query.data[len('delete_'):]
+        photos = load_photos()
+        if photo_key in photos:
+            del photos[photo_key]
+            save_photos(photos)
+            await query.answer(f"عکس '{photo_key}' حذف شد!")
+            await query.message.edit_text("عکس با موفقیت حذف شد!")
+        else:
+            await query.answer("این عکس پیدا نشد!")
+            await query.message.edit_text("عکس پیدا نشد!")
 
 # تابع حذف پیام‌ها بعد از ۳۰ ثانیه
 async def delete_after_delay(bot, chat_id, photo_message_id, delete_message_id):
