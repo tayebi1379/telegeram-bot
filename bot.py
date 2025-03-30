@@ -120,13 +120,15 @@ async def button(update, context):
             return
         channel_id = query.data[len('delete_channel_'):]
         channels = load_channels()
+        print(f"Attempting to delete channel: {channel_id}, Current channels: {channels}")  # دیباگ
         if channel_id in channels:
             channels.remove(channel_id)
             save_channels(channels)
             await query.answer(f"کانال '{channel_id}' حذف شد!")
-            await query.message.edit_text("کانال با موفقیت حذف شد!")
+            await query.message.edit_text(f"کانال '{channel_id}' با موفقیت حذف شد!")
         else:
             await query.answer("این کانال پیدا نشد!")
+            await query.message.edit_text(f"کانال '{channel_id}' پیدا نشد!")
 
 # تابع حذف پیام‌ها بعد از ۳۰ ثانیه
 async def delete_after_delay(bot, chat_id, photo_message_id, delete_message_id):
@@ -266,8 +268,8 @@ def main():
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("addphoto", add_photo))
     application.add_handler(CommandHandler("removephoto", remove_photo))
-    application.add_handler(CommandHandler("addchannel", add_channel))  # دستور جدید برای اضافه کردن کانال
-    application.add_handler(CommandHandler("removechannel", remove_channel))  # دستور جدید برای حذف کانال
+    application.add_handler(CommandHandler("addchannel", add_channel))
+    application.add_handler(CommandHandler("removechannel", remove_channel))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     application.add_handler(CallbackQueryHandler(button))
 
