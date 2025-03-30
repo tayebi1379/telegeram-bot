@@ -12,7 +12,7 @@ TOKEN = os.getenv('TOKEN')
 # آیدی کانال (با @)
 CHANNEL_ID = '@tehrankhabari_ir'
 # آیدی ادمین (باید آیدی عددی خودت رو بذاری)
-ADMIN_ID = 1607082886  # آیدی عددی اکانت تلگرامت رو اینجا بذار
+ADMIN_ID = 123456789  # آیدی عددی اکانت تلگرامت رو اینجا بذار
 
 # فایل JSON برای ذخیره عکس‌ها
 PHOTO_FILE = 'photos.json'
@@ -68,7 +68,7 @@ async def start(update, context):
         reply_markup=reply_markup
     )
 
-# تابع مدیریت کلیک روی دکمه "عضو شدم"
+# تابع مدیریت کلیک روی دکمه‌ها
 async def button(update, context):
     query = update.callback_query
     user_id = query.from_user.id
@@ -88,7 +88,7 @@ async def button(update, context):
                 f"شما هنوز در کانال {CHANNEL_ID} عضو نشدید! لطفاً عضو بشید و دوباره امتحان کنید.",
                 reply_markup=reply_markup
             )
-    elif query.data.startswith('delete_'):  # مدیریت حذف عکس
+    elif query.data.startswith('delete_'):
         if user_id != ADMIN_ID:
             await query.answer("شما ادمین نیستید!")
             return
@@ -116,11 +116,18 @@ async def add_photo(update, context):
         return
 
     if len(context.args) < 2:
-        await update.message.reply_text("لطفاً از فرمت زیر استفاده کنید:\n/addphoto [توضیحات] [لینک عکس]\nمثال: /addphoto عکس جدید https://example.com/photo.jpg")
+        await update.message.reply_text("لطفاً از فرمت زیر استفاده کنید:\n/addphoto [توضیحات] [لینک عکس]\nمثال: /addphoto \"عکس جدید\" https://example.com/photo.jpg\nتوضیحات چند کلمه‌ای رو توی \" نقل‌قول \" بذارید.")
         return
 
-    description = context.args[0]
-    photo_url = context.args[1]
+    # گرفتن توضیحات و لینک با پشتیبانی از چند کلمه
+    args = " ".join(context.args).split(" ", 1)  # جدا کردن اولین بخش (توضیحات) از بقیه (لینک)
+    description = args[0].strip()
+    photo_url = args[1].strip() if len(args) > 1 else ""
+    
+    if not photo_url:
+        await update.message.reply_text("لطفاً لینک عکس رو بعد از توضیحات وارد کنید!")
+        return
+
     photos = load_photos()
     photos[description] = photo_url
     save_photos(photos)
@@ -162,9 +169,12 @@ async def handle_message(update, context):
         return
 
     if message_text in photos:
-        photo_message = await context.bot.send_photo(chat_id=user_id, photo=photos[message_text])
-        delete_message = await context.bot.send_message(chat_id=user_id, text="این عکس پس از ۳۰ ثانیه حذف می‌شود")
-        asyncio.create_task(delete_after_delay(context.bot, user_id, photo_message.message_id, delete_message.message_id))
+        try:
+            photo_message = await context.bot.send_photo(chat_id=user_id, photo=photos[message_text])
+            delete_message = await context.bot.send_message(chat_id=user_id, text="این عکس پس از ۳۰ ثانیه حذف می‌شود")
+            asyncio.create_task(delete_after_delay(context.bot, user_id, photo_message.message_id, delete_message.message_id))
+        except telegram.error.BadRequest as e:
+            await update.message.reply_text(f"خطا در نمایش عکس: {e}. لطفاً مطمئن شوید لینک معتبر است.")
     else:
         await update.message.reply_text("لطفاً یکی از گزینه‌های منو رو انتخاب کنید!")
     
@@ -188,8 +198,8 @@ def main():
 
     # هندلرها
     application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("addphoto", add_photo))  # دستور اضافه کردن عکس
-    application.add_handler(CommandHandler("removephoto", remove_photo))  # دستور حذف عکس
+    application.add_handler(CommandHandler("addphoto", add_photo))
+    application.add_handler(CommandHandler("removephoto", remove_photo))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     application.add_handler(CallbackQueryHandler(button))
 
