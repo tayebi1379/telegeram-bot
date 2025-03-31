@@ -45,15 +45,19 @@ def save_channels(channels):
     with open(CHANNEL_FILE, 'w', encoding='utf-8') as f:
         json.dump(channels, f, ensure_ascii=False, indent=4)
 
+# تابع بررسی عضویت کاربر در یک کانال خاص
+async def is_member(context, user_id, channel_id):
+    try:
+        member = await context.bot.get_chat_member(channel_id, user_id)
+        return member.status in ['member', 'administrator', 'creator']
+    except telegram.error.BadRequest:
+        return False
+
 # تابع بررسی عضویت کاربر در همه کانال‌ها
 async def check_membership(context, user_id):
     channels = load_channels()
     for channel_id in channels:
-        try:
-            member = await context.bot.get_chat_member(channel_id, user_id)
-            if member.status not in ['member', 'administrator', 'creator']:
-                return False
-        except telegram.error.BadRequest:
+        if not await is_member(context, user_id, channel_id):
             return False
     return True
 
@@ -71,9 +75,10 @@ async def show_main_menu(update, context):
 async def start(update, context):
     user_id = update.effective_user.id
     channels = load_channels()
-    keyboard = [
-        [InlineKeyboardButton("👈عــضــویــت👉", url=f'https://t.me/{channel[1:]}')] for channel in channels
-    ]
+    keyboard = []
+    for channel in channels:
+        if not await is_member(context, user_id, channel):
+            keyboard.append([InlineKeyboardButton("👈عــضــویــت👉", url=f'https://t.me/{channel[1:]}')])
     keyboard.append([InlineKeyboardButton("✅تایید✅", callback_data='check_membership')])
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(
@@ -97,9 +102,10 @@ async def button(update, context):
         else:
             await query.answer("🔴شما هنوز در همه کانال‌ها عضو نشدید🔴")
             channels = load_channels()
-            keyboard = [
-                [InlineKeyboardButton("👈عــضــویــت👉", url=f'https://t.me/{channel[1:]}')] for channel in channels
-            ]
+            keyboard = []
+            for channel in channels:
+                if not await is_member(context, user_id, channel):
+                    keyboard.append([InlineKeyboardButton("👈عــضــویــت👉", url=f'https://t.me/{channel[1:]}')])
             keyboard.append([InlineKeyboardButton("✅تایید✅", callback_data='check_membership')])
             reply_markup = InlineKeyboardMarkup(keyboard)
             await query.message.edit_text(
@@ -233,9 +239,10 @@ async def handle_message(update, context):
 
     if not await check_membership(context, user_id):
         channels = load_channels()
-        keyboard = [
-            [InlineKeyboardButton("👈عــضــویــت👉", url=f'https://t.me/{channel[1:]}')] for channel in channels
-        ]
+        keyboard = []
+        for channel in channels:
+            if not await is_member(context, user_id, channel):
+                keyboard.append([InlineKeyboardButton("👈عــضــویــت👉", url=f'https://t.me/{channel[1:]}')])
         keyboard.append([InlineKeyboardButton("✅تایید✅", callback_data='check_membership')])
         reply_markup = InlineKeyboardMarkup(keyboard)
         await update.message.reply_text(
