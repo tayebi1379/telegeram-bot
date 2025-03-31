@@ -10,7 +10,7 @@ import threading
 # توکن ربات از متغیر محیطی
 TOKEN = os.getenv('TOKEN')
 # آیدی ادمین (باید آیدی عددی خودت رو بذاری)
-ADMIN_ID = 1607082886  # آیدی عددی اکانت تلگرامت رو اینجا بذار
+ADMIN_ID = 123456789  # آیدی عددی اکانت تلگرامت رو اینجا بذار
 
 # فایل‌های JSON برای ذخیره عکس‌ها و کانال‌ها
 PHOTO_FILE = 'photos.json'
@@ -74,18 +74,21 @@ async def start(update, context):
     keyboard = [
         [InlineKeyboardButton(f"عضویت در {channel}", url=f'https://t.me/{channel[1:]}')] for channel in channels
     ]
-    keyboard.append([InlineKeyboardButton("عضو شدم", callback_data='check_membership')])
+    keyboard.append([InlineKeyboardButton("تأیید", callback_data='check_membership')])
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(
-        f"برای دیدن عکس‌ها، لطفاً در کانال‌های زیر عضو بشید:\n" + "\n".join(channels),
-        reply_markup=reply_markup
+        "**سلام دوست عزیزم 😊**\n"
+        "**خـــوش اومـــــدی 🌹**\n"
+        "برای مشاهده پست لطفا اینجاها جوین شو و دکمه تأیید رو بزن ☺",
+        reply_markup=reply_markup,
+        parse_mode='Markdown'
     )
 
 # تابع مدیریت کلیک روی دکمه‌ها
 async def button(update, context):
     query = update.callback_query
     user_id = query.from_user.id
-    print(f"Button clicked: {query.data}")  # دیباگ برای چک کردن ورودی
+    print(f"Button clicked: {query.data}")  # دیباگ
 
     if query.data == 'check_membership':
         if await check_membership(context, user_id):
@@ -97,11 +100,14 @@ async def button(update, context):
             keyboard = [
                 [InlineKeyboardButton(f"عضویت در {channel}", url=f'https://t.me/{channel[1:]}')] for channel in channels
             ]
-            keyboard.append([InlineKeyboardButton("عضو شدم", callback_data='check_membership')])
+            keyboard.append([InlineKeyboardButton("تأیید", callback_data='check_membership')])
             reply_markup = InlineKeyboardMarkup(keyboard)
             await query.message.edit_text(
-                f"شما هنوز در همه کانال‌ها عضو نشدید! لطفاً عضو بشید و دوباره امتحان کنید:\n" + "\n".join(channels),
-                reply_markup=reply_markup
+                "**سلام دوست عزیزم 😊**\n"
+                "**خـــوش اومـــــدی 🌹**\n"
+                "برای مشاهده پست لطفا اینجاها جوین شو و دکمه تأیید رو بزن ☺",
+                reply_markup=reply_markup,
+                parse_mode='Markdown'
             )
     elif query.data.startswith('delete_channel_'):
         if user_id != ADMIN_ID:
@@ -109,12 +115,11 @@ async def button(update, context):
             return
         channel_id = query.data[len('delete_channel_'):]
         channels = load_channels()
-        print(f"Attempting to delete channel: {channel_id}, Current channels: {channels}")  # دیباگ
         if channel_id in channels:
             channels.remove(channel_id)
             save_channels(channels)
             await query.answer(f"کانال '{channel_id}' حذف شد!")
-            await query.message.edit_text(f"کانال '{channel_id}' با موفقیت حذف شد!")
+            await query.message.edit_text(f"کانال '{channel_id}' با موفقیت حذف شد!\nفایل channels.json رو توی GitHub آپدیت کن.")
         else:
             await query.answer("این کانال پیدا نشد!")
             await query.message.edit_text(f"کانال '{channel_id}' پیدا نشد!")
@@ -128,7 +133,7 @@ async def button(update, context):
             del photos[photo_key]
             save_photos(photos)
             await query.answer(f"عکس '{photo_key}' حذف شد!")
-            await query.message.edit_text("عکس با موفقیت حذف شد!")
+            await query.message.edit_text(f"عکس با موفقیت حذف شد!\nفایل photos.json رو توی GitHub آپدیت کن.")
         else:
             await query.answer("این عکس پیدا نشد!")
             await query.message.edit_text("عکس پیدا نشد!")
@@ -161,7 +166,7 @@ async def add_photo(update, context):
     photos = load_photos()
     photos[description] = photo_url
     save_photos(photos)
-    await update.message.reply_text(f"عکس با توضیح '{description}' اضافه شد!")
+    await update.message.reply_text(f"عکس با توضیح '{description}' اضافه شد!\nبرای دائمی شدن، فایل photos.json رو توی GitHub آپدیت کن.")
 
 # تابع حذف عکس (فقط برای ادمین)
 async def remove_photo(update, context):
@@ -202,7 +207,7 @@ async def add_channel(update, context):
 
     channels.append(channel_id)
     save_channels(channels)
-    await update.message.reply_text(f"کانال '{channel_id}' اضافه شد!")
+    await update.message.reply_text(f"کانال '{channel_id}' اضافه شد!\nبرای دائمی شدن، فایل channels.json رو توی GitHub آپدیت کن.")
 
 # تابع حذف کانال (فقط برای ادمین)
 async def remove_channel(update, context):
@@ -231,11 +236,14 @@ async def handle_message(update, context):
         keyboard = [
             [InlineKeyboardButton(f"عضویت در {channel}", url=f'https://t.me/{channel[1:]}')] for channel in channels
         ]
-        keyboard.append([InlineKeyboardButton("عضو شدم", callback_data='check_membership')])
+        keyboard.append([InlineKeyboardButton("تأیید", callback_data='check_membership')])
         reply_markup = InlineKeyboardMarkup(keyboard)
         await update.message.reply_text(
-            f"شما هنوز در همه کانال‌ها عضو نشدید! لطفاً عضو بشید:\n" + "\n".join(channels),
-            reply_markup=reply_markup
+            "**سلام دوست عزیزم 😊**\n"
+            "**خـــوش اومـــــدی 🌹**\n"
+            "برای مشاهده پست لطفا اینجاها جوین شو و دکمه تأیید رو بزن ☺",
+            reply_markup=reply_markup,
+            parse_mode='Markdown'
         )
         return
 
