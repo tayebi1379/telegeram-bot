@@ -74,7 +74,7 @@ async def start(update, context):
     keyboard = [
         [InlineKeyboardButton("👈عــضــویــت👉", url=f'https://t.me/{channel[1:]}')] for channel in channels
     ]
-    keyboard.append([InlineKeyboardButton("تأیید", callback_data='check_membership')])
+    keyboard.append([InlineKeyboardButton("✅تایید✅", callback_data='check_membership')])
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(
         "**سلام دوست عزیزم 😊**\n"
@@ -92,15 +92,15 @@ async def button(update, context):
 
     if query.data == 'check_membership':
         if await check_membership(context, user_id):
-            await query.answer("عضویت شما تأیید شد!")
+            await query.answer("❤️عضویت شما تأیید شد❤️")
             await show_main_menu(update, context)
         else:
-            await query.answer("شما هنوز در همه کانال‌ها عضو نشدید!")
+            await query.answer("🔴شما هنوز در همه کانال‌ها عضو نشدید🔴")
             channels = load_channels()
             keyboard = [
                 [InlineKeyboardButton("👈عــضــویــت👉", url=f'https://t.me/{channel[1:]}')] for channel in channels
             ]
-            keyboard.append([InlineKeyboardButton("تأیید", callback_data='check_membership')])
+            keyboard.append([InlineKeyboardButton("✅تایید✅", callback_data='check_membership')])
             reply_markup = InlineKeyboardMarkup(keyboard)
             await query.message.edit_text(
                 "**سلام دوست عزیزم 😊**\n"
@@ -236,7 +236,7 @@ async def handle_message(update, context):
         keyboard = [
             [InlineKeyboardButton("👈عــضــویــت👉", url=f'https://t.me/{channel[1:]}')] for channel in channels
         ]
-        keyboard.append([InlineKeyboardButton("تأیید", callback_data='check_membership')])
+        keyboard.append([InlineKeyboardButton("✅تایید✅", callback_data='check_membership')])
         reply_markup = InlineKeyboardMarkup(keyboard)
         await update.message.reply_text(
             "**سلام دوست عزیزم 😊**\n"
