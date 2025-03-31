@@ -72,7 +72,7 @@ async def start(update, context):
     user_id = update.effective_user.id
     channels = load_channels()
     keyboard = [
-        [InlineKeyboardButton(f"عضویت در {channel}", url=f'https://t.me/{channel[1:]}')] for channel in channels
+        [InlineKeyboardButton("👈عــضــویــت👉", url=f'https://t.me/{channel[1:]}')] for channel in channels
     ]
     keyboard.append([InlineKeyboardButton("تأیید", callback_data='check_membership')])
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -98,7 +98,7 @@ async def button(update, context):
             await query.answer("شما هنوز در همه کانال‌ها عضو نشدید!")
             channels = load_channels()
             keyboard = [
-                [InlineKeyboardButton(f"عضویت در {channel}", url=f'https://t.me/{channel[1:]}')] for channel in channels
+                [InlineKeyboardButton("👈عــضــویــت👉", url=f'https://t.me/{channel[1:]}')] for channel in channels
             ]
             keyboard.append([InlineKeyboardButton("تأیید", callback_data='check_membership')])
             reply_markup = InlineKeyboardMarkup(keyboard)
@@ -234,7 +234,7 @@ async def handle_message(update, context):
     if not await check_membership(context, user_id):
         channels = load_channels()
         keyboard = [
-            [InlineKeyboardButton(f"عضویت در {channel}", url=f'https://t.me/{channel[1:]}')] for channel in channels
+            [InlineKeyboardButton("👈عــضــویــت👉", url=f'https://t.me/{channel[1:]}')] for channel in channels
         ]
         keyboard.append([InlineKeyboardButton("تأیید", callback_data='check_membership')])
         reply_markup = InlineKeyboardMarkup(keyboard)
