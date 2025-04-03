@@ -9,12 +9,13 @@ import threading
 
 # توکن ربات از متغیر محیطی
 TOKEN = os.getenv('TOKEN')
-# آیدی ادمین (باید آیدی عددی خودت رو بذاری)
-ADMIN_ID = 1607082886  # آیدی عددی اکانت تلگرامت رو اینجا بذار
+# آیدی ادمین
+ADMIN_ID = 1607082886
 
-# فایل‌های JSON برای ذخیره عکس‌ها و کانال‌ها
+# فایل‌های JSON برای ذخیره عکس‌ها، کانال‌ها و کاربران
 PHOTO_FILE = 'photos.json'
 CHANNEL_FILE = 'channels.json'
+USER_FILE = 'users.json'
 
 # بارگذاری عکس‌ها از فایل JSON یا مقداردهی اولیه
 def load_photos():
@@ -38,12 +39,24 @@ def load_channels():
     if os.path.exists(CHANNEL_FILE):
         with open(CHANNEL_FILE, 'r', encoding='utf-8') as f:
             return json.load(f)
-    return ['@tehrankhabari_ir']  # کانال اولیه
+    return ['@tehrankhabari_ir']
 
 # ذخیره کانال‌ها در فایل JSON
 def save_channels(channels):
     with open(CHANNEL_FILE, 'w', encoding='utf-8') as f:
         json.dump(channels, f, ensure_ascii=False, indent=4)
+
+# بارگذاری کاربران از فایل JSON یا مقداردهی اولیه
+def load_users():
+    if os.path.exists(USER_FILE):
+        with open(USER_FILE, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    return {"users": [], "banned": []}
+
+# ذخیره کاربران در فایل JSON
+def save_users(users):
+    with open(USER_FILE, 'w', encoding='utf-8') as f:
+        json.dump(users, f, ensure_ascii=False, indent=4)
 
 # تابع بررسی عضویت کاربر در یک کانال خاص
 async def is_member(context, user_id, channel_id):
@@ -61,6 +74,11 @@ async def check_membership(context, user_id):
             return False
     return True
 
+# تابع بررسی بلاک بودن کاربر
+def is_banned(user_id):
+    users = load_users()
+    return str(user_id) in users["banned"]
+
 # تابع نمایش منوی اصلی
 async def show_main_menu(update, context):
     photos = load_photos()
@@ -74,6 +92,18 @@ async def show_main_menu(update, context):
 # تابع شروع ربات با اینلاین کیبورد
 async def start(update, context):
     user_id = update.effective_user.id
+    username = update.effective_user.username or "بدون نام کاربری"
+    
+    # ذخیره کاربر جدید
+    users = load_users()
+    if str(user_id) not in [user["id"] for user in users["users"]]:
+        users["users"].append({"id": str(user_id), "username": username})
+        save_users(users)
+
+    if is_banned(user_id):
+        await update.message.reply_text("شما از ربات بلاک شده‌اید!")
+        return
+
     channels = load_channels()
     keyboard = []
     for channel in channels:
@@ -89,11 +119,84 @@ async def start(update, context):
         parse_mode='Markdown'
     )
 
+# تابع نمایش لیست کاربران (فقط برای ادمین)
+async def users(update, context):
+    user_id = update.effective_user.id
+    if user_id != ADMIN_ID:
+        await update.message.reply_text("شما ادمین نیستید!")
+        return
+
+    users = load_users()
+    if not users["users"]:
+        await update.message.reply_text("هیچ کاربری هنوز ثبت نشده!")
+        return
+
+    user_list = "\n".join([f"ID: {user['id']} - @{user['username']}" for user in users["users"]])
+    await update.message.reply_text(f"لیست کاربران:\n{user_list}")
+
+# تابع نمایش تعداد کاربران (فقط برای ادمین)
+async def user_count(update, context):
+    user_id = update.effective_user.id
+    if user_id != ADMIN_ID:
+        await update.message.reply_text("شما ادمین نیستید!")
+        return
+
+    users = load_users()
+    count = len(users["users"])
+    await update.message.reply_text(f"تعداد کاربران: {count}")
+
+# تابع بلاک کردن کاربر (فقط برای ادمین)
+async def ban(update, context):
+    user_id = update.effective_user.id
+    if user_id != ADMIN_ID:
+        await update.message.reply_text("شما ادمین نیستید!")
+        return
+
+    if not context.args:
+        await update.message.reply_text("لطفاً آیدی کاربر رو وارد کنید:\n/ban <user_id>")
+        return
+
+    target_id = context.args[0]
+    users = load_users()
+    if target_id in [user["id"] for user in users["users"]]:
+        if target_id not in users["banned"]:
+            users["banned"].append(target_id)
+            save_users(users)
+            await update.message.reply_text(f"کاربر با آیدی {target_id} بلاک شد!")
+        else:
+            await update.message.reply_text("این کاربر قبلاً بلاک شده!")
+    else:
+        await update.message.reply_text("این کاربر پیدا نشد!")
+
+# تابع رفع بلاک کاربر (فقط برای ادمین)
+async def unban(update, context):
+    user_id = update.effective_user.id
+    if user_id != ADMIN_ID:
+        await update.message.reply_text("شما ادمین نیستید!")
+        return
+
+    if not context.args:
+        await update.message.reply_text("لطفاً آیدی کاربر رو وارد کنید:\n/unban <user_id>")
+        return
+
+    target_id = context.args[0]
+    users = load_users()
+    if target_id in users["banned"]:
+        users["banned"].remove(target_id)
+        save_users(users)
+        await update.message.reply_text(f"کاربر با آیدی {target_id} از بلاک خارج شد!")
+    else:
+        await update.message.reply_text("این کاربر بلاک نشده بود!")
+
 # تابع مدیریت کلیک روی دکمه‌ها
 async def button(update, context):
     query = update.callback_query
     user_id = query.from_user.id
     print(f"Button clicked: {query.data}")  # دیباگ
+
+    if is_banned(user_id):
+        await query.answer("شما از ربات بلاک شده‌اید!")
+        return
 
     if query.data == 'check_membership':
         if await check_membership(context, user_id):
@@ -237,6 +340,10 @@ async def handle_message(update, context):
     message_text = update.message.text
     photos = load_photos()
 
+    if is_banned(user_id):
+        await update.message.reply_text("شما از ربات بلاک شده‌اید!")
+        return
+
     if not await check_membership(context, user_id):
         channels = load_channels()
         keyboard = []
@@ -288,6 +395,10 @@ def main():
     application.add_handler(CommandHandler("removephoto", remove_photo))
     application.add_handler(CommandHandler("addchannel", add_channel))
     application.add_handler(CommandHandler("removechannel", remove_channel))
+    application.add_handler(CommandHandler("users", users))
+    application.add_handler(CommandHandler("usercount", user_count))
+    application.add_handler(CommandHandler("ban", ban))
+    application.add_handler(CommandHandler("unban", unban))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     application.add_handler(CallbackQueryHandler(button))
 
