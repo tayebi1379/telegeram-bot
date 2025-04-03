@@ -1,62 +1,67 @@
 import telegram
 import os
 import asyncio
-import json
+from pymongo import MongoClient
 from telegram import ReplyKeyboardMarkup, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import threading
 
-# توکن ربات از متغیر محیطی
+# توکن ربات و MongoDB URI از متغیر محیطی
 TOKEN = os.getenv('TOKEN')
+MONGO_URI = os.getenv('MONGO_URI')
 # آیدی ادمین
 ADMIN_ID = 1607082886
 
-# فایل‌های JSON برای ذخیره عکس‌ها، کانال‌ها و کاربران
-PHOTO_FILE = 'photos.json'
-CHANNEL_FILE = 'channels.json'
-USER_FILE = 'users.json'
+# اتصال به MongoDB
+client = MongoClient(MONGO_URI)
+db = client['telegram_bot']  # اسم دیتابیس
+photos_collection = db['photos']
+channels_collection = db['channels']
+users_collection = db['users']
 
-# بارگذاری عکس‌ها از فایل JSON یا مقداردهی اولیه
+# مقداردهی اولیه دیتابیس اگه خالی باشه
+def initialize_db():
+    if photos_collection.count_documents({}) == 0:
+        photos_collection.insert_one({
+            "data": {
+                "🤐دیدن عکس زن سپهر حیدری🤐": "https://cdn.rokna.net/thumbnail/wOmsWjeamneO/yYGYIWiRH1jE7SFsFf8OS8GtVdPr30fs0wJj5HjN1IuvcJmljcN6H8bAsgVZzpzYCc2Paf9tWNyagVuk0QlPbNxB-KuYdy9P6xL39i3G-Q82HeI91mK-78F62Z5KWk3gNl6RwvjtxurVX_hzZe6NzQ,,/%D8%B3%D9%BE%D9%87%D8%B1+%D8%AD%DB%8C%D8%AF%D8%B1%DB%8C.jpg",
+                "🤯دیدن عکس سانسوری ساسی😳": "https://cdn.rokna.net/thumbnail/mHTJunUTOoEL/yYGYIWiRH1jE7SFsFf8OS8GtVdPr30fs0wJj5HjN1IuvcJmljcN6H8bAsgVZzpzYCc2Paf9tWNyagVuk0QlPbNxB-KuYdy9P6xL39i3G-Q82HeI91mK-78F62Z5KWk3gWiOBV6O9LT4lqjAfWapFmw,,/%D8%B3%D8%A7%D8%B3%DB%8C+%D9%85%D8%A7%D9%86%DA%A9%D9%86.jpg",
+                "😬دیدن عکس رونالدو و زنش😵": "https://cdn.rokna.net/servev2/f6VBCVS65xWu/Db2f077dXpA,/%D8%B1%D9%88%D9%86%D8%A7%D9%84%D8%AF%D9%88+%D9%88+%D9%87%D9%85%D8%B3%D8%B1%D8%B4.jpg",
+                "😍دیدن عکس علی دایی و زنش🫢": "https://cdn.pishnahadevizheh.com/servev2/KGj3qrulKNsb/MnvWRFh5dGY,/%D8%B9%D9%84%DB%8C+%D8%AF%D8%A7%DB%8C%DB%8C.jpg"
+            }
+        })
+    if channels_collection.count_documents({}) == 0:
+        channels_collection.insert_one({"data": ['@tehrankhabari_ir']})
+    if users_collection.count_documents({}) == 0:
+        users_collection.insert_one({"users": [], "banned": []})
+
+# بارگذاری عکس‌ها از MongoDB
 def load_photos():
-    if os.path.exists(PHOTO_FILE):
-        with open(PHOTO_FILE, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    return {
-        "🤐دیدن عکس زن سپهر حیدری🤐": "https://cdn.rokna.net/thumbnail/wOmsWjeamneO/yYGYIWiRH1jE7SFsFf8OS8GtVdPr30fs0wJj5HjN1IuvcJmljcN6H8bAsgVZzpzYCc2Paf9tWNyagVuk0QlPbNxB-KuYdy9P6xL39i3G-Q82HeI91mK-78F62Z5KWk3gNl6RwvjtxurVX_hzZe6NzQ,,/%D8%B3%D9%BE%D9%87%D8%B1+%D8%AD%DB%8C%D8%AF%D8%B1%DB%8C.jpg",
-        "🤯دیدن عکس سانسوری ساسی😳": "https://cdn.rokna.net/thumbnail/mHTJunUTOoEL/yYGYIWiRH1jE7SFsFf8OS8GtVdPr30fs0wJj5HjN1IuvcJmljcN6H8bAsgVZzpzYCc2Paf9tWNyagVuk0QlPbNxB-KuYdy9P6xL39i3G-Q82HeI91mK-78F62Z5KWk3gWiOBV6O9LT4lqjAfWapFmw,,/%D8%B3%D8%A7%D8%B3%DB%8C+%D9%85%D8%A7%D9%86%DA%A9%D9%86.jpg",
-        "😬دیدن عکس رونالدو و زنش😵": "https://cdn.rokna.net/servev2/f6VBCVS65xWu/Db2f077dXpA,/%D8%B1%D9%88%D9%86%D8%A7%D9%84%D8%AF%D9%88+%D9%88+%D9%87%D9%85%D8%B3%D8%B1%D8%B4.jpg",
-        "😍دیدن عکس علی دایی و زنش🫢": "https://cdn.pishnahadevizheh.com/servev2/KGj3qrulKNsb/MnvWRFh5dGY,/%D8%B9%D9%84%DB%8C+%D8%AF%D8%A7%DB%8C%DB%8C.jpg"
-    }
+    doc = photos_collection.find_one()
+    return doc["data"] if doc else {}
 
-# ذخیره عکس‌ها در فایل JSON
+# ذخیره عکس‌ها در MongoDB
 def save_photos(photos):
-    with open(PHOTO_FILE, 'w', encoding='utf-8') as f:
-        json.dump(photos, f, ensure_ascii=False, indent=4)
+    photos_collection.update_one({}, {"$set": {"data": photos}}, upsert=True)
 
-# بارگذاری کانال‌ها از فایل JSON یا مقداردهی اولیه
+# بارگذاری کانال‌ها از MongoDB
 def load_channels():
-    if os.path.exists(CHANNEL_FILE):
-        with open(CHANNEL_FILE, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    return ['@tehrankhabari_ir']
+    doc = channels_collection.find_one()
+    return doc["data"] if doc else []
 
-# ذخیره کانال‌ها در فایل JSON
+# ذخیره کانال‌ها در MongoDB
 def save_channels(channels):
-    with open(CHANNEL_FILE, 'w', encoding='utf-8') as f:
-        json.dump(channels, f, ensure_ascii=False, indent=4)
+    channels_collection.update_one({}, {"$set": {"data": channels}}, upsert=True)
 
-# بارگذاری کاربران از فایل JSON یا مقداردهی اولیه
+# بارگذاری کاربران از MongoDB
 def load_users():
-    if os.path.exists(USER_FILE):
-        with open(USER_FILE, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    return {"users": [], "banned": []}
+    doc = users_collection.find_one()
+    return doc if doc else {"users": [], "banned": []}
 
-# ذخیره کاربران در فایل JSON
+# ذخیره کاربران در MongoDB
 def save_users(users):
-    with open(USER_FILE, 'w', encoding='utf-8') as f:
-        json.dump(users, f, ensure_ascii=False, indent=4)
+    users_collection.update_one({}, {"$set": {"users": users["users"], "banned": users["banned"]}}, upsert=True)
 
 # تابع بررسی عضویت کاربر در یک کانال خاص
 async def is_member(context, user_id, channel_id):
@@ -192,7 +197,7 @@ async def unban(update, context):
 async def button(update, context):
     query = update.callback_query
     user_id = query.from_user.id
-    print(f"Button clicked: {query.data}")  # دیباگ
+    print(f"Button clicked: {query.data}")
 
     if is_banned(user_id):
         await query.answer("شما از ربات بلاک شده‌اید!")
@@ -228,7 +233,7 @@ async def button(update, context):
             channels.remove(channel_id)
             save_channels(channels)
             await query.answer(f"کانال '{channel_id}' حذف شد!")
-            await query.message.edit_text(f"کانال '{channel_id}' با موفقیت حذف شد!\nفایل channels.json رو توی GitHub آپدیت کن.")
+            await query.message.edit_text(f"کانال '{channel_id}' با موفقیت حذف شد!")
         else:
             await query.answer("این کانال پیدا نشد!")
             await query.message.edit_text(f"کانال '{channel_id}' پیدا نشد!")
@@ -242,7 +247,7 @@ async def button(update, context):
             del photos[photo_key]
             save_photos(photos)
             await query.answer(f"عکس '{photo_key}' حذف شد!")
-            await query.message.edit_text(f"عکس با موفقیت حذف شد!\nفایل photos.json رو توی GitHub آپدیت کن.")
+            await query.message.edit_text("عکس با موفقیت حذف شد!")
         else:
             await query.answer("این عکس پیدا نشد!")
             await query.message.edit_text("عکس پیدا نشد!")
@@ -275,7 +280,7 @@ async def add_photo(update, context):
     photos = load_photos()
     photos[description] = photo_url
     save_photos(photos)
-    await update.message.reply_text(f"عکس با توضیح '{description}' اضافه شد!\nبرای دائمی شدن، فایل photos.json رو توی GitHub آپدیت کن.")
+    await update.message.reply_text(f"عکس با توضیح '{description}' اضافه شد!")
 
 # تابع حذف عکس (فقط برای ادمین)
 async def remove_photo(update, context):
@@ -316,7 +321,7 @@ async def add_channel(update, context):
 
     channels.append(channel_id)
     save_channels(channels)
-    await update.message.reply_text(f"کانال '{channel_id}' اضافه شد!\nبرای دائمی شدن، فایل channels.json رو توی GitHub آپدیت کن.")
+    await update.message.reply_text(f"کانال '{channel_id}' اضافه شد!")
 
 # تابع حذف کانال (فقط برای ادمین)
 async def remove_channel(update, context):
@@ -387,6 +392,9 @@ def run_server():
 
 # تابع اصلی
 def main():
+    # مقداردهی اولیه دیتابیس
+    initialize_db()
+
     application = Application.builder().token(TOKEN).build()
 
     # هندلرها
