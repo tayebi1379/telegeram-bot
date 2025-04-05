@@ -15,7 +15,7 @@ ADMIN_ID = 1607082886
 
 # اتصال به MongoDB
 client = MongoClient(MONGO_URI)
-db = client['telegram_bot']  # اسم دیتابیس
+db = client['telegram_bot']
 photos_collection = db['photos']
 channels_collection = db['channels']
 users_collection = db['users']
@@ -62,6 +62,26 @@ def load_users():
 # ذخیره کاربران در MongoDB
 def save_users(users):
     users_collection.update_one({}, {"$set": {"users": users["users"], "banned": users["banned"]}}, upsert=True)
+
+# تابع منوی مدیریتی
+async def modir(update, context):
+    user_id = update.effective_user.id
+    if user_id != ADMIN_ID:
+        await update.message.reply_text("شما ادمین نیستید!")
+        return
+
+    keyboard = [
+        [InlineKeyboardButton("اضافه کردن عکس", callback_data='add_photo')],
+        [InlineKeyboardButton("حذف عکس", callback_data='remove_photo')],
+        [InlineKeyboardButton("اضافه کردن کانال", callback_data='add_channel')],
+        [InlineKeyboardButton("حذف کانال", callback_data='remove_channel')],
+        [InlineKeyboardButton("لیست کاربران", callback_data='list_users')],
+        [InlineKeyboardButton("تعداد کاربران", callback_data='count_users')],
+        [InlineKeyboardButton("بلاک کاربر", callback_data='ban_user')],
+        [InlineKeyboardButton("رفع بلاک کاربر", callback_data='unban_user')],
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text("منوی مدیریت ربات:", reply_markup=reply_markup)
 
 # تابع بررسی عضویت کاربر در یک کانال خاص
 async def is_member(context, user_id, channel_id):
@@ -251,6 +271,61 @@ async def button(update, context):
         else:
             await query.answer("این عکس پیدا نشد!")
             await query.message.edit_text("عکس پیدا نشد!")
+    # مدیریت دکمه‌های جدید منوی /modir
+    elif query.data == 'add_photo':
+        await query.answer()
+        await query.message.edit_text("لطفاً از فرمت زیر استفاده کنید:\n/addphoto [توضیحات] [لینک عکس]\nمثال: /addphoto \"عکس جدید\" https://example.com/photo.jpg")
+    elif query.data == 'remove_photo':
+        if user_id != ADMIN_ID:
+            await query.answer("شما ادمین نیستید!")
+            return
+        photos = load_photos()
+        if not photos:
+            await query.answer("هیچ عکسی برای حذف وجود نداره!")
+            await query.message.edit_text("هیچ عکسی برای حذف وجود نداره!")
+        else:
+            keyboard = [[InlineKeyboardButton(key, callback_data=f'delete_{key}')] for key in photos.keys()]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            await query.message.edit_text("عکسی که می‌خواهید حذف کنید رو انتخاب کنید:", reply_markup=reply_markup)
+    elif query.data == 'add_channel':
+        await query.answer()
+        await query.message.edit_text("لطفاً آیدی کانال رو وارد کنید:\n/addchannel @ChannelID")
+    elif query.data == 'remove_channel':
+        if user_id != ADMIN_ID:
+            await query.answer("شما ادمین نیستید!")
+            return
+        channels = load_channels()
+        if not channels:
+            await query.answer("هیچ کانالی برای حذف وجود نداره!")
+            await query.message.edit_text("هیچ کانالی برای حذف وجود نداره!")
+        else:
+            keyboard = [[InlineKeyboardButton(channel, callback_data=f'delete_channel_{channel}')] for channel in channels]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            await query.message.edit_text("کانالی که می‌خواهید حذف کنید رو انتخاب کنید:", reply_markup=reply_markup)
+    elif query.data == 'list_users':
+        if user_id != ADMIN_ID:
+            await query.answer("شما ادمین نیستید!")
+            return
+        users = load_users()
+        if not users["users"]:
+            await query.answer("هیچ کاربری ثبت نشده!")
+            await query.message.edit_text("هیچ کاربری هنوز ثبت نشده!")
+        else:
+            user_list = "\n".join([f"ID: {user['id']} - @{user['username']}" for user in users["users"]])
+            await query.message.edit_text(f"لیست کاربران:\n{user_list}")
+    elif query.data == 'count_users':
+        if user_id != ADMIN_ID:
+            await query.answer("شما ادمین نیستید!")
+            return
+        users = load_users()
+        count = len(users["users"])
+        await query.message.edit_text(f"تعداد کاربران: {count}")
+    elif query.data == 'ban_user':
+        await query.answer()
+        await query.message.edit_text("لطفاً آیدی کاربر رو وارد کنید:\n/ban <user_id>")
+    elif query.data == 'unban_user':
+        await query.answer()
+        await query.message.edit_text("لطفاً آیدی کاربر رو وارد کنید:\n/unban <user_id>")
 
 # تابع حذف پیام‌ها بعد از ۳۰ ثانیه
 async def delete_after_delay(bot, chat_id, photo_message_id, delete_message_id):
@@ -407,6 +482,7 @@ def main():
     application.add_handler(CommandHandler("usercount", user_count))
     application.add_handler(CommandHandler("ban", ban))
     application.add_handler(CommandHandler("unban", unban))
+    application.add_handler(CommandHandler("modir", modir))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     application.add_handler(CallbackQueryHandler(button))
 
