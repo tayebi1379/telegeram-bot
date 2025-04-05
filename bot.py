@@ -461,9 +461,10 @@ class SimpleHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(b'Bot is running')
 
-def run_server():
-    server = HTTPServer(('0.0.0.0', 8080), SimpleHandler)
-    server.serve_forever()
+    def do_HEAD(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/plain')
+        self.end_headers()
 
 # تابع اصلی
 def main():
