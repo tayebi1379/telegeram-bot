@@ -466,6 +466,10 @@ class SimpleHandler(BaseHTTPRequestHandler):
         self.send_header('Content-type', 'text/plain')
         self.end_headers()
 
+def run_server():
+    server = HTTPServer(('0.0.0.0', 8080), SimpleHandler)
+    server.serve_forever()
+
 # تابع اصلی
 def main():
     # مقداردهی اولیه دیتابیس
