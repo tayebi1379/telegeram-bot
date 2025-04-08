@@ -33,7 +33,7 @@ def initialize_db():
     if channels_collection.count_documents({}) == 0:
         channels_collection.insert_one({"data": ['@tehrankhabari_ir']})
     if users_collection.count_documents({}) == 0:
-        users_collection.insert_one({"users": [], "banned": []})
+        users_collection.insert_one({"users": [], "banned": [], "approved": []})
 
 def load_photos():
     doc = photos_collection.find_one()
@@ -51,10 +51,10 @@ def save_channels(channels):
 
 def load_users():
     doc = users_collection.find_one()
-    return doc if doc else {"users": [], "banned": []}
+    return doc if doc else {"users": [], "banned": [], "approved": []}
 
 def save_users(users):
-    users_collection.update_one({}, {"$set": {"users": users["users"], "banned": users["banned"]}}, upsert=True)
+    users_collection.update_one({}, {"$set": {"users": users["users"], "banned": users["banned"], "approved": users["approved"]}}, upsert=True)
 
 # تابع بررسی عضویت
 async def is_member(context, user_id, channel_id):
@@ -75,6 +75,10 @@ async def check_membership(context, user_id):
 def is_banned(user_id):
     users = load_users()
     return str(user_id) in users["banned"]
+
+def is_approved(user_id):
+    users = load_users()
+    return str(user_id) in users["approved"]
 
 async def show_main_menu(update, context):
     photos = load_photos()
@@ -97,6 +101,10 @@ async def start(update, context):
 
     if is_banned(user_id):
         await update.message.reply_text("شما از ربات بلاک شده‌اید!")
+        return
+
+    if is_approved(user_id):
+        await show_main_menu(update, context)
         return
 
     channels = load_channels()
@@ -143,9 +151,17 @@ async def button(update, context):
 
         if can_check and not not_member_channels:
             await query.answer("❤️ عضویت شما تأیید شد ❤️")
+            users = load_users()
+            if str(user_id) not in users["approved"]:
+                users["approved"].append(str(user_id))
+                save_users(users)
             await show_main_menu(update, context)
         elif not can_check:
             await query.answer("عضویتت رو چک کردیم، خوش اومدی!")
+            users = load_users()
+            if str(user_id) not in users["approved"]:
+                users["approved"].append(str(user_id))
+                save_users(users)
             await show_main_menu(update, context)
         else:
             await query.answer("🔴 شما هنوز توی همه کانال‌ها عضو نشدید 🔴")
@@ -296,6 +312,7 @@ async def modir(update, context):
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text("منوی مدیریت ربات:", reply_markup=reply_markup)
 
+# تابع مدیریت پیام‌ها
 async def handle_message(update, context):
     user_id = update.effective_user.id
     message_text = update.message.text
@@ -303,6 +320,16 @@ async def handle_message(update, context):
 
     if is_banned(user_id):
         await update.message.reply_text("شما از ربات بلاک شده‌اید!")
+        return
+
+    if is_approved(user_id):  # اگه کاربر قبلاً تأیید شده
+        if message_text in photos:
+            photo_message = await context.bot.send_photo(chat_id=user_id, photo=photos[message_text])
+            delete_message = await context.bot.send_message(chat_id=user_id, text="این عکس پس از ۳۰ ثانیه حذف می‌شود")
+            asyncio.create_task(delete_after_delay(context.bot, user_id, photo_message.message_id, delete_message.message_id))
+        else:
+            await update.message.reply_text("لطفاً یکی از گزینه‌های منو رو انتخاب کنید!")
+        await show_main_menu(update, context)
         return
 
     if not await check_membership(context, user_id):
