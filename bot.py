@@ -34,6 +34,11 @@ def initialize_db():
         channels_collection.insert_one({"data": ['@tehrankhabari_ir']})
     if users_collection.count_documents({}) == 0:
         users_collection.insert_one({"users": [], "banned": [], "approved": []})
+    else:
+        # اگه سند وجود داره و approved نیست، اضافه‌ش کن
+        users = users_collection.find_one()
+        if "approved" not in users:
+            users_collection.update_one({}, {"$set": {"approved": []}}, upsert=True)
 
 def load_photos():
     doc = photos_collection.find_one()
@@ -51,7 +56,12 @@ def save_channels(channels):
 
 def load_users():
     doc = users_collection.find_one()
-    return doc if doc else {"users": [], "banned": [], "approved": []}
+    if not doc:
+        return {"users": [], "banned": [], "approved": []}
+    # اگه approved توی سند نیست، یه لیست خالی برگردون
+    if "approved" not in doc:
+        doc["approved"] = []
+    return doc
 
 def save_users(users):
     users_collection.update_one({}, {"$set": {"users": users["users"], "banned": users["banned"], "approved": users["approved"]}}, upsert=True)
@@ -322,7 +332,7 @@ async def handle_message(update, context):
         await update.message.reply_text("شما از ربات بلاک شده‌اید!")
         return
 
-    if is_approved(user_id):  # اگه کاربر قبلاً تأیید شده
+    if is_approved(user_id):
         if message_text in photos:
             photo_message = await context.bot.send_photo(chat_id=user_id, photo=photos[message_text])
             delete_message = await context.bot.send_message(chat_id=user_id, text="این عکس پس از ۳۰ ثانیه حذف می‌شود")
